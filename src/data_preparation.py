@@ -20,21 +20,26 @@ def prepare_dataset(
     dataset = load_dataset(dataset_path)
     
     def tokenize_function(examples):
-        """Tokenize examples using Lamini's format."""
-        # We'll need to adjust this based on the actual structure of your dataset
-        # You might want to print examples.keys() to see available fields
+        """Tokenize examples using Q&A format."""
+        # Combine question and answer in a chat format
         prompts = [
-            f"{text}"  # Adjust this format based on the actual data structure
-            for text in examples["text"]  # Adjust field name based on actual dataset
+            f"### Question: {question}\n\n### Answer: {answer}"
+            for question, answer in zip(examples["question"], examples["answer"])
         ]
         
-        return tokenizer(
+        # Tokenize the text
+        tokenized = tokenizer(
             prompts,
             truncation=True,
             max_length=max_length,
             padding="max_length",
             return_tensors="pt"
         )
+        
+        # Set labels for training
+        tokenized["labels"] = tokenized["input_ids"].clone()
+        
+        return tokenized
     
     # Tokenize dataset
     tokenized_dataset = dataset.map(

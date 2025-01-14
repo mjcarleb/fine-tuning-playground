@@ -1,22 +1,26 @@
 model:
-  name: "meta-llama/Llama-2-7b-hf"
+  name: "meta-llama/Llama-2-3b-Instruct-hf"
   
 training:
   learning_rate: 2e-4
-  batch_size: 4
+  batch_size: 8  # Increased from 4 since 3B model needs less memory
   num_epochs: 3
-  max_length: 512
+  max_length: 256  # Matches our data preparation setting
   gradient_accumulation_steps: 4
+  warmup_steps: 100
+  weight_decay: 0.01
+  optimizer: "adamw_torch"
+  lr_scheduler_type: "cosine"
 
 lora:
   r: 8
   alpha: 32
   dropout: 0.1
-  target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
+  target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]  # Llama 2 attention modules
   bias: "none"
   task_type: "CAUSAL_LM"
 
 dataset:
   name: "lamini/lamini_docs"
   train_split: "train"
-  eval_split: "validation"  # optional 
+  eval_split: "validation"

@@ -8,7 +8,7 @@ from transformers import (
     Trainer,
     BitsAndBytesConfig
 )
-from peft import LoraConfig, get_peft_model
+from peft import LoraConfig as PeftLoraConfig, get_peft_model
 import yaml
 
 @dataclass
@@ -29,6 +29,14 @@ class LoraConfig:
     bias: str
     task_type: str
     base_model_name_or_path: str
+    is_prompt_learning: bool = False
+    peft_type: str = "LORA"
+    layer_replication: bool = False
+    rank_pattern: dict = None
+
+    def __post_init__(self):
+        if self.rank_pattern is None:
+            self.rank_pattern = {}
 
 class LlamaTrainer:
     def __init__(self, config_path: str):
@@ -54,28 +62,33 @@ class LlamaTrainer:
             )
             model_config['quantization_config'] = bnb_config
         
-        # Load model with conditional quantization
+        # Load model with proper device handling
         self.model = AutoModelForCausalLM.from_pretrained(
             self.config['model']['name'],
-            device_map="auto",
+            device_map={"": "cpu"},
             trust_remote_code=True,
             **model_config
-        )
+        ).train()
         
+        # Load and configure tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.config['model']['name'],
             trust_remote_code=True
         )
         
-        # Configure LoRA with base model name
-        lora_config = LoraConfig(
+        # Set padding token if not set
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+            self.model.config.pad_token_id = self.tokenizer.eos_token_id
+        
+        # Use PEFT's LoraConfig directly
+        lora_config = PeftLoraConfig(
             r=self.config['lora']['r'],
-            alpha=self.config['lora']['alpha'],
-            dropout=self.config['lora']['dropout'],
+            lora_alpha=self.config['lora']['alpha'],
+            lora_dropout=self.config['lora']['dropout'],
             target_modules=self.config['lora']['target_modules'],
             bias=self.config['lora']['bias'],
-            task_type=self.config['lora']['task_type'],
-            base_model_name_or_path=self.config['model']['name']
+            task_type=self.config['lora']['task_type']
         )
         
         self.model = get_peft_model(self.model, lora_config)
@@ -83,10 +96,10 @@ class LlamaTrainer:
     def train(self, train_dataset, eval_dataset=None):
         training_args = TrainingArguments(
             output_dir="./results",
-            learning_rate=self.config['training']['learning_rate'],
-            per_device_train_batch_size=self.config['training']['batch_size'],
-            gradient_accumulation_steps=self.config['training']['gradient_accumulation_steps'],
-            num_train_epochs=self.config['training']['num_epochs'],
+            learning_rate=float(self.config['training']['learning_rate']),
+            per_device_train_batch_size=int(self.config['training']['batch_size']),
+            gradient_accumulation_steps=int(self.config['training']['gradient_accumulation_steps']),
+            num_train_epochs=int(self.config['training']['num_epochs']),
             weight_decay=0.01,
             logging_dir='./logs',
             logging_steps=10,

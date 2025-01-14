@@ -9,8 +9,8 @@ model:
 
 training:
   learning_rate: 2e-4
-  batch_size: 8
-  num_epochs: 3
+  batch_size: 1
+  num_epochs: 1
   max_length: 256
   gradient_accumulation_steps: 4
   warmup_steps: 100

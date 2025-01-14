@@ -1,5 +1,5 @@
 model:
-  name: "meta-llama/Llama-2-3b-Instruct-hf"
+  name: "meta-llama/Llama-3.2-3B-Instruct"
   
 training:
   learning_rate: 2e-4

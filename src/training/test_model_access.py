@@ -1,7 +1,7 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 def test_model_access():
-    model_name = "meta-llama/Llama-2-3b-Instruct-hf"
+    model_name = "meta-llama/Llama-3.2-3B-Instruct"
     
     try:
         print(f"Attempting to load tokenizer for {model_name}...")

@@ -3,7 +3,7 @@ from typing import Dict
 import torch
 from transformers import AutoTokenizer
 
-def prepare_dataset(tokenizer, split="train", test_size=0.2, seed=42):
+def prepare_dataset(tokenizer, split="train", test_size=0.2, seed=42, max_length=256):
     """
     Prepare dataset with proper train/test split
     
@@ -12,6 +12,7 @@ def prepare_dataset(tokenizer, split="train", test_size=0.2, seed=42):
         split: Either "train" or "test"
         test_size: Fraction of data to use for testing
         seed: Random seed for reproducibility
+        max_length: Maximum sequence length for tokenization
     """
     # Load dataset
     dataset = load_dataset("lamini/lamini_docs")

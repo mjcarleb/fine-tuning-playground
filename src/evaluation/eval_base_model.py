@@ -1,6 +1,9 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 from datasets import load_dataset
+import time
+from rouge_score import rouge_scorer
+import numpy as np
 
 def load_model_and_tokenizer():
     model_name = "meta-llama/Llama-3.2-3B-Instruct"
@@ -9,19 +12,18 @@ def load_model_and_tokenizer():
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=torch.float16,  # Use float16 to save memory
-        device_map="auto"  # Automatically choose best device (CPU/GPU)
+        torch_dtype=torch.float16,
+        device_map="auto"
     )
     return model, tokenizer
 
 def generate_response(model, tokenizer, question, max_length=512):
-    # Format the prompt
     prompt = f"### Question: {question}\n\n### Answer:"
-    
-    # Tokenize
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
     
-    # Generate
+    # Record generation time
+    start_time = time.time()
+    
     outputs = model.generate(
         **inputs,
         max_length=max_length,
@@ -31,17 +33,44 @@ def generate_response(model, tokenizer, question, max_length=512):
         pad_token_id=tokenizer.eos_token_id
     )
     
-    # Decode and return
+    generation_time = time.time() - start_time
+    
     response = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    return response.split("### Answer:")[-1].strip()
+    response = response.split("### Answer:")[-1].strip()
+    
+    return response, generation_time
+
+def calculate_metrics(response, ground_truth):
+    # Initialize ROUGE scorer
+    scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+    
+    # Calculate ROUGE scores
+    scores = scorer.score(ground_truth, response)
+    
+    # Calculate response length
+    response_length = len(response.split())
+    ground_truth_length = len(ground_truth.split())
+    
+    return {
+        'rouge1_f1': scores['rouge1'].fmeasure,
+        'rouge2_f1': scores['rouge2'].fmeasure,
+        'rougeL_f1': scores['rougeL'].fmeasure,
+        'response_length': response_length,
+        'ground_truth_length': ground_truth_length,
+        'length_ratio': response_length / ground_truth_length if ground_truth_length > 0 else 0
+    }
 
 def evaluate_base_model():
     # Load model and tokenizer
     model, tokenizer = load_model_and_tokenizer()
     
-    # Load some test questions from Lamini dataset
+    # Load test questions
     dataset = load_dataset("lamini/lamini_docs")
-    test_samples = dataset["train"].select(range(5))  # Test with first 5 questions
+    test_samples = dataset["train"].select(range(5))
+    
+    # Initialize metrics storage
+    all_metrics = []
+    total_generation_time = 0
     
     print("\nEvaluating base model on sample questions:")
     print("----------------------------------------")
@@ -51,12 +80,43 @@ def evaluate_base_model():
         ground_truth = sample["answer"]
         
         print(f"\nQuestion {idx + 1}: {question}")
+        
+        # Generate response and measure time
+        response, generation_time = generate_response(model, tokenizer, question)
+        total_generation_time += generation_time
+        
+        # Calculate metrics
+        metrics = calculate_metrics(response, ground_truth)
+        all_metrics.append(metrics)
+        
         print("\nModel Response:")
-        response = generate_response(model, tokenizer, question)
         print(response)
         print("\nGround Truth:")
         print(ground_truth)
-        print("\n----------------------------------------")
+        print("\nMetrics:")
+        print(f"Generation Time: {generation_time:.2f} seconds")
+        print(f"ROUGE-1 F1: {metrics['rouge1_f1']:.3f}")
+        print(f"ROUGE-2 F1: {metrics['rouge2_f1']:.3f}")
+        print(f"ROUGE-L F1: {metrics['rougeL_f1']:.3f}")
+        print(f"Response Length: {metrics['response_length']} words")
+        print(f"Ground Truth Length: {metrics['ground_truth_length']} words")
+        print(f"Length Ratio: {metrics['length_ratio']:.2f}")
+        print("----------------------------------------")
+    
+    # Calculate and display average metrics
+    print("\nAverage Metrics Across All Samples:")
+    print("----------------------------------------")
+    avg_metrics = {
+        key: np.mean([m[key] for m in all_metrics])
+        for key in all_metrics[0].keys()
+    }
+    print(f"Average Generation Time: {total_generation_time/len(test_samples):.2f} seconds")
+    print(f"Average ROUGE-1 F1: {avg_metrics['rouge1_f1']:.3f}")
+    print(f"Average ROUGE-2 F1: {avg_metrics['rouge2_f1']:.3f}")
+    print(f"Average ROUGE-L F1: {avg_metrics['rougeL_f1']:.3f}")
+    print(f"Average Response Length: {avg_metrics['response_length']:.1f} words")
+    print(f"Average Ground Truth Length: {avg_metrics['ground_truth_length']:.1f} words")
+    print(f"Average Length Ratio: {avg_metrics['length_ratio']:.2f}")
 
 if __name__ == "__main__":
     evaluate_base_model()

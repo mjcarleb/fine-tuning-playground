@@ -1,5 +1,11 @@
 model:
   name: "meta-llama/Llama-3.2-3B-Instruct"
+  quantization:
+    enabled: false  # Set to true for AWS
+    load_in_4bit: true
+    compute_dtype: "float16"
+    quant_type: "nf4"
+    use_double_quant: true
 
 training:
   learning_rate: 2e-4

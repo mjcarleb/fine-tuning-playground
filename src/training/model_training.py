@@ -41,20 +41,24 @@ class LlamaTrainer:
         return config
 
     def setup_model(self):
-        # Configure quantization
-        bnb_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_compute_dtype=torch.float16,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_use_double_quant=True,
-        )
-
-        # Load model and tokenizer
+        model_config = {}
+        
+        # Configure quantization if enabled
+        if self.config['model'].get('quantization', {}).get('enabled', False):
+            bnb_config = BitsAndBytesConfig(
+                load_in_4bit=self.config['model']['quantization']['load_in_4bit'],
+                bnb_4bit_compute_dtype=getattr(torch, self.config['model']['quantization']['compute_dtype']),
+                bnb_4bit_quant_type=self.config['model']['quantization']['quant_type'],
+                bnb_4bit_use_double_quant=self.config['model']['quantization']['use_double_quant'],
+            )
+            model_config['quantization_config'] = bnb_config
+        
+        # Load model with conditional quantization
         self.model = AutoModelForCausalLM.from_pretrained(
             self.config['model']['name'],
-            quantization_config=bnb_config,
             device_map="auto",
-            trust_remote_code=True
+            trust_remote_code=True,
+            **model_config
         )
         
         self.tokenizer = AutoTokenizer.from_pretrained(

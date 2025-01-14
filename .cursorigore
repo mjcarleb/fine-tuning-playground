@@ -1,0 +1,25 @@
+# Ignore data directory
+data/
+data/*
+
+# Common data file extensions
+*.csv
+*.json
+*.jsonl
+*.txt
+*.parquet
+*.arrow
+*.pkl
+*.pickle
+
+# Model checkpoints and results
+results/
+logs/
+fine_tuned_model/
+
+# Virtual environment
+venv/
+
+# Python cache files
+__pycache__/
+*.py[cod] 

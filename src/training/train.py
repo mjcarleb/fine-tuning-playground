@@ -1,3 +1,6 @@
+import sys
+sys.path.append("src")  # Add src directory to Python path
+
 from data.data_preparation import prepare_dataset  # Updated import path
 from training.model_training import LlamaTrainer
 

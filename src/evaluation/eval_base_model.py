@@ -60,63 +60,82 @@ def calculate_metrics(response, ground_truth):
         'length_ratio': response_length / ground_truth_length if ground_truth_length > 0 else 0
     }
 
-def evaluate_base_model():
+def evaluate_base_model(num_samples=10):
     # Load model and tokenizer
     model, tokenizer = load_model_and_tokenizer()
     
     # Load test questions
     dataset = load_dataset("lamini/lamini_docs")
-    test_samples = dataset["train"].select(range(5))
+    
+    # Get total dataset size
+    total_samples = len(dataset["train"])
+    print(f"Total available samples: {total_samples}")
+    
+    # Select samples with some spacing to get diverse examples
+    indices = np.linspace(0, total_samples-1, num_samples, dtype=int)
+    test_samples = dataset["train"].select(indices)
+    
+    print(f"\nEvaluating base model on {num_samples} sample questions:")
+    print("----------------------------------------")
     
     # Initialize metrics storage
     all_metrics = []
     total_generation_time = 0
     
-    print("\nEvaluating base model on sample questions:")
-    print("----------------------------------------")
-    
     for idx, sample in enumerate(test_samples):
         question = sample["question"]
         ground_truth = sample["answer"]
         
-        print(f"\nQuestion {idx + 1}: {question}")
+        print(f"\nQuestion {idx + 1}/{num_samples}: {question}")
         
-        # Generate response and measure time
-        response, generation_time = generate_response(model, tokenizer, question)
-        total_generation_time += generation_time
-        
-        # Calculate metrics
-        metrics = calculate_metrics(response, ground_truth)
-        all_metrics.append(metrics)
-        
-        print("\nModel Response:")
-        print(response)
-        print("\nGround Truth:")
-        print(ground_truth)
-        print("\nMetrics:")
-        print(f"Generation Time: {generation_time:.2f} seconds")
-        print(f"ROUGE-1 F1: {metrics['rouge1_f1']:.3f}")
-        print(f"ROUGE-2 F1: {metrics['rouge2_f1']:.3f}")
-        print(f"ROUGE-L F1: {metrics['rougeL_f1']:.3f}")
-        print(f"Response Length: {metrics['response_length']} words")
-        print(f"Ground Truth Length: {metrics['ground_truth_length']} words")
-        print(f"Length Ratio: {metrics['length_ratio']:.2f}")
-        print("----------------------------------------")
+        try:
+            # Generate response with timeout
+            response, generation_time = generate_response(model, tokenizer, question)
+            total_generation_time += generation_time
+            
+            # Calculate metrics
+            metrics = calculate_metrics(response, ground_truth)
+            all_metrics.append(metrics)
+            
+            print("\nModel Response:")
+            print(response)
+            print("\nGround Truth:")
+            print(ground_truth)
+            print("\nMetrics:")
+            print(f"Generation Time: {generation_time:.2f} seconds")
+            print(f"ROUGE-1 F1: {metrics['rouge1_f1']:.3f}")
+            print(f"ROUGE-2 F1: {metrics['rouge2_f1']:.3f}")
+            print(f"ROUGE-L F1: {metrics['rougeL_f1']:.3f}")
+            print(f"Response Length: {metrics['response_length']} words")
+            print(f"Ground Truth Length: {metrics['ground_truth_length']} words")
+            print(f"Length Ratio: {metrics['length_ratio']:.2f}")
+            print("----------------------------------------")
+            
+        except Exception as e:
+            print(f"Error processing question {idx + 1}: {str(e)}")
+            continue
     
-    # Calculate and display average metrics
-    print("\nAverage Metrics Across All Samples:")
-    print("----------------------------------------")
-    avg_metrics = {
-        key: np.mean([m[key] for m in all_metrics])
-        for key in all_metrics[0].keys()
-    }
-    print(f"Average Generation Time: {total_generation_time/len(test_samples):.2f} seconds")
-    print(f"Average ROUGE-1 F1: {avg_metrics['rouge1_f1']:.3f}")
-    print(f"Average ROUGE-2 F1: {avg_metrics['rouge2_f1']:.3f}")
-    print(f"Average ROUGE-L F1: {avg_metrics['rougeL_f1']:.3f}")
-    print(f"Average Response Length: {avg_metrics['response_length']:.1f} words")
-    print(f"Average Ground Truth Length: {avg_metrics['ground_truth_length']:.1f} words")
-    print(f"Average Length Ratio: {avg_metrics['length_ratio']:.2f}")
+    if all_metrics:
+        # Calculate and display average metrics with standard deviations
+        print("\nFinal Metrics Across All Samples:")
+        print("----------------------------------------")
+        metrics_summary = {}
+        
+        for key in all_metrics[0].keys():
+            values = [m[key] for m in all_metrics]
+            metrics_summary[key] = {
+                'mean': np.mean(values),
+                'std': np.std(values)
+            }
+        
+        print(f"Total Samples Processed: {len(all_metrics)}")
+        print(f"Average Generation Time: {total_generation_time/len(all_metrics):.2f} seconds")
+        print(f"ROUGE-1 F1: {metrics_summary['rouge1_f1']['mean']:.3f} (±{metrics_summary['rouge1_f1']['std']:.3f})")
+        print(f"ROUGE-2 F1: {metrics_summary['rouge2_f1']['mean']:.3f} (±{metrics_summary['rouge2_f1']['std']:.3f})")
+        print(f"ROUGE-L F1: {metrics_summary['rougeL_f1']['mean']:.3f} (±{metrics_summary['rougeL_f1']['std']:.3f})")
+        print(f"Average Response Length: {metrics_summary['response_length']['mean']:.1f} (±{metrics_summary['response_length']['std']:.1f}) words")
+        print(f"Average Ground Truth Length: {metrics_summary['ground_truth_length']['mean']:.1f} (±{metrics_summary['ground_truth_length']['std']:.1f}) words")
+        print(f"Average Length Ratio: {metrics_summary['length_ratio']['mean']:.2f} (±{metrics_summary['length_ratio']['std']:.2f})")
 
 if __name__ == "__main__":
     evaluate_base_model()

@@ -9,29 +9,37 @@ def load_model_and_tokenizer():
     model_name = "meta-llama/Llama-3.2-3B-Instruct"
     print(f"Loading model and tokenizer from {model_name}...")
     
+    # Check if MPS is available
+    device = torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
+    print(f"Using device: {device}")
+    
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         torch_dtype=torch.float16,
-        device_map="auto"
+        device_map="mps" if torch.backends.mps.is_available() else "auto"
     )
     return model, tokenizer
 
 def generate_response(model, tokenizer, question, max_length=512):
     prompt = f"### Question: {question}\n\n### Answer:"
-    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+    inputs = tokenizer(prompt, return_tensors="pt")
+    
+    # Move inputs to the same device as model
+    inputs = {k: v.to(model.device) for k, v in inputs.items()}
     
     # Record generation time
     start_time = time.time()
     
-    outputs = model.generate(
-        **inputs,
-        max_length=max_length,
-        num_return_sequences=1,
-        temperature=0.7,
-        do_sample=True,
-        pad_token_id=tokenizer.eos_token_id
-    )
+    with torch.inference_mode():  # More efficient than no_grad for inference
+        outputs = model.generate(
+            **inputs,
+            max_length=max_length,
+            num_return_sequences=1,
+            temperature=0.7,
+            do_sample=True,
+            pad_token_id=tokenizer.eos_token_id
+        )
     
     generation_time = time.time() - start_time
     

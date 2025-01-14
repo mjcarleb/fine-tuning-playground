@@ -8,7 +8,7 @@ def test_data_preparation():
     # Prepare a small subset of the dataset
     dataset = prepare_dataset(
         tokenizer=tokenizer,
-        max_length=512
+        max_length=256
     )
     
     # Print sample to verify format
@@ -21,6 +21,11 @@ def test_data_preparation():
     decoded = tokenizer.decode(dataset[0]['input_ids'])
     print("\nSample decoded text:")
     print(decoded)
+    
+    # Print actual length of first example (non-padding tokens)
+    attention_mask = dataset[0]['attention_mask']
+    actual_length = attention_mask.sum()
+    print(f"\nActual content length (non-padding): {actual_length}")
 
 if __name__ == "__main__":
-    test_data_preparation() 
+    test_data_preparation()

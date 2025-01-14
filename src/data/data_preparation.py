@@ -5,7 +5,7 @@ from transformers import AutoTokenizer
 
 def prepare_dataset(
     tokenizer: AutoTokenizer,
-    max_length: int = 512,
+    max_length: int = 256,
     dataset_path: str = "lamini/lamini_docs"
 ) -> torch.utils.data.Dataset:
     """
@@ -13,7 +13,7 @@ def prepare_dataset(
     
     Args:
         tokenizer: Tokenizer to use for encoding
-        max_length: Maximum sequence length
+        max_length: Maximum sequence length (default: 256)
         dataset_path: Path to the Lamini dataset
     """
     # Load Lamini dataset

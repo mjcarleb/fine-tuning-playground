@@ -1,4 +1,4 @@
-from model_training import LlamaTrainer
+from training.model_training import LlamaTrainer
 from data_preparation import prepare_dataset  # We'll create this next
 
 def main():

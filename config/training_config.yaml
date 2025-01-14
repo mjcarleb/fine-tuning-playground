@@ -1,17 +1,22 @@
 model:
-  name: "meta-llama/Llama-3.2-3B-Instruct-QLORA_INT4_EO8"
+  name: "meta-llama/Llama-2-7b-hf"
   
 training:
   learning_rate: 2e-4
   batch_size: 4
   num_epochs: 3
   max_length: 512
-  gradient_accumulation_steps: 8
+  gradient_accumulation_steps: 4
 
 lora:
   r: 8
   alpha: 32
   dropout: 0.1
-  target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
+  target_modules: ["q_proj", "v_proj"]
   bias: "none"
-  task_type: "CAUSAL_LM" 
+  task_type: "CAUSAL_LM"
+
+dataset:
+  name: "your_dataset_name"
+  train_split: "train"
+  eval_split: "validation"  # optional 

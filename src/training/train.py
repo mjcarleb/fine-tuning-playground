@@ -1,5 +1,5 @@
+from data.data_preparation import prepare_dataset  # Updated import path
 from training.model_training import LlamaTrainer
-from data_preparation import prepare_dataset  # We'll create this next
 
 def main():
     # Initialize trainer
@@ -8,8 +8,8 @@ def main():
     # Setup model and tokenizer
     trainer.setup_model()
     
-    # Load and prepare dataset
-    train_dataset = prepare_dataset()  # We'll implement this next
+    # Load and prepare dataset using existing function
+    train_dataset = prepare_dataset(trainer.tokenizer)  # Pass tokenizer
     
     # Train the model
     trainer.train(train_dataset)
@@ -18,4 +18,4 @@ def main():
     trainer.save_model("./fine_tuned_model")
 
 if __name__ == "__main__":
-    main() 
+    main()

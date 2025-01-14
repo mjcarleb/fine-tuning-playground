@@ -66,12 +66,12 @@ class LlamaTrainer:
             trust_remote_code=True
         )
         
-        # Configure LoRA
+        # Configure LoRA with corrected parameter name
         lora_config = LoraConfig(
             r=self.config['lora']['r'],
-            lora_alpha=self.config['lora']['alpha'],
-            target_modules=self.config['lora']['target_modules'],
+            lora_alpha=self.config['lora']['alpha'],  # This matches config file's 'alpha'
             lora_dropout=self.config['lora']['dropout'],
+            target_modules=self.config['lora']['target_modules'],
             bias=self.config['lora']['bias'],
             task_type=self.config['lora']['task_type']
         )

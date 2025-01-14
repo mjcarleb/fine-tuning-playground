@@ -66,18 +66,18 @@ class LlamaTrainer:
             trust_remote_code=True
         )
         
-        # Configure LoRA with corrected parameter name
+        # Configure LoRA with correct parameter name (alpha, not lora_alpha)
         lora_config = LoraConfig(
             r=self.config['lora']['r'],
-            lora_alpha=self.config['lora']['alpha'],  # This matches config file's 'alpha'
-            lora_dropout=self.config['lora']['dropout'],
+            alpha=self.config['lora']['alpha'],  # Changed from lora_alpha to alpha
+            dropout=self.config['lora']['dropout'],
             target_modules=self.config['lora']['target_modules'],
             bias=self.config['lora']['bias'],
             task_type=self.config['lora']['task_type']
         )
         
         self.model = get_peft_model(self.model, lora_config)
-        
+                
     def train(self, train_dataset, eval_dataset=None):
         training_args = TrainingArguments(
             output_dir="./results",

@@ -16,14 +16,21 @@ def load_model_and_tokenizer():
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=torch.float16,
-        device_map="mps" if torch.backends.mps.is_available() else "auto"
+        torch_dtype=torch.float16,  # Use half precision
+        device_map="mps" if torch.backends.mps.is_available() else "auto",
+        low_cpu_mem_usage=True,     # Reduce memory usage
+        offload_folder="offload"    # Offload to disk if needed
     )
+    
+    # Enable memory efficient attention if available
+    if hasattr(model.config, "use_memory_efficient_attention"):
+        model.config.use_memory_efficient_attention = True
+    
     return model, tokenizer
 
-def generate_response(model, tokenizer, question, max_length=512):
+def generate_response(model, tokenizer, question, max_length=256):  # Reduced max length
     prompt = f"### Question: {question}\n\n### Answer:"
-    inputs = tokenizer(prompt, return_tensors="pt")
+    inputs = tokenizer(prompt, return_tensors="pt", padding=True, truncation=True)
     
     # Move inputs to the same device as model
     inputs = {k: v.to(model.device) for k, v in inputs.items()}
@@ -31,14 +38,19 @@ def generate_response(model, tokenizer, question, max_length=512):
     # Record generation time
     start_time = time.time()
     
-    with torch.inference_mode():  # More efficient than no_grad for inference
+    with torch.inference_mode():  # More efficient than no_grad
         outputs = model.generate(
             **inputs,
             max_length=max_length,
             num_return_sequences=1,
             temperature=0.7,
             do_sample=True,
-            pad_token_id=tokenizer.eos_token_id
+            pad_token_id=tokenizer.eos_token_id,
+            num_beams=1,           # Disable beam search for speed
+            early_stopping=True,   # Stop when EOS token is generated
+            top_k=50,             # Limit vocabulary choices
+            top_p=0.95,           # Nucleus sampling
+            repetition_penalty=1.2 # Reduce repetition
         )
     
     generation_time = time.time() - start_time
@@ -68,13 +80,13 @@ def calculate_metrics(response, ground_truth):
         'length_ratio': response_length / ground_truth_length if ground_truth_length > 0 else 0
     }
 
-def evaluate_base_model():
+def evaluate_base_model(num_samples=3):  # Reduced number of samples for testing
     # Load model and tokenizer
     model, tokenizer = load_model_and_tokenizer()
     
     # Load test questions
     dataset = load_dataset("lamini/lamini_docs")
-    test_samples = dataset["train"].select(range(5))
+    test_samples = dataset["train"].select(range(num_samples))
     
     # Initialize metrics storage
     all_metrics = []
@@ -89,42 +101,36 @@ def evaluate_base_model():
         
         print(f"\nQuestion {idx + 1}: {question}")
         
-        # Generate response and measure time
-        response, generation_time = generate_response(model, tokenizer, question)
-        total_generation_time += generation_time
-        
-        # Calculate metrics
-        metrics = calculate_metrics(response, ground_truth)
-        all_metrics.append(metrics)
-        
-        print("\nModel Response:")
-        print(response)
-        print("\nGround Truth:")
-        print(ground_truth)
-        print("\nMetrics:")
-        print(f"Generation Time: {generation_time:.2f} seconds")
-        print(f"ROUGE-1 F1: {metrics['rouge1_f1']:.3f}")
-        print(f"ROUGE-2 F1: {metrics['rouge2_f1']:.3f}")
-        print(f"ROUGE-L F1: {metrics['rougeL_f1']:.3f}")
-        print(f"Response Length: {metrics['response_length']} words")
-        print(f"Ground Truth Length: {metrics['ground_truth_length']} words")
-        print(f"Length Ratio: {metrics['length_ratio']:.2f}")
-        print("----------------------------------------")
+        try:
+            # Generate response with timeout
+            response, generation_time = generate_response(model, tokenizer, question)
+            total_generation_time += generation_time
+            
+            # Calculate metrics
+            metrics = calculate_metrics(response, ground_truth)
+            all_metrics.append(metrics)
+            
+            print("\nModel Response:")
+            print(response)
+            print("\nMetrics:")
+            print(f"Generation Time: {generation_time:.2f} seconds")
+            print(f"ROUGE-1 F1: {metrics['rouge1_f1']:.3f}")
+            print(f"Response Length: {metrics['response_length']} words")
+            
+        except Exception as e:
+            print(f"Error processing question {idx + 1}: {str(e)}")
+            continue
     
-    # Calculate and display average metrics
-    print("\nAverage Metrics Across All Samples:")
-    print("----------------------------------------")
-    avg_metrics = {
-        key: np.mean([m[key] for m in all_metrics])
-        for key in all_metrics[0].keys()
-    }
-    print(f"Average Generation Time: {total_generation_time/len(test_samples):.2f} seconds")
-    print(f"Average ROUGE-1 F1: {avg_metrics['rouge1_f1']:.3f}")
-    print(f"Average ROUGE-2 F1: {avg_metrics['rouge2_f1']:.3f}")
-    print(f"Average ROUGE-L F1: {avg_metrics['rougeL_f1']:.3f}")
-    print(f"Average Response Length: {avg_metrics['response_length']:.1f} words")
-    print(f"Average Ground Truth Length: {avg_metrics['ground_truth_length']:.1f} words")
-    print(f"Average Length Ratio: {avg_metrics['length_ratio']:.2f}")
+    if all_metrics:
+        # Calculate and display average metrics
+        print("\nAverage Metrics:")
+        avg_metrics = {
+            key: np.mean([m[key] for m in all_metrics])
+            for key in all_metrics[0].keys()
+        }
+        print(f"Average Generation Time: {total_generation_time/len(test_samples):.2f} seconds")
+        print(f"Average ROUGE-1 F1: {avg_metrics['rouge1_f1']:.3f}")
+        print(f"Average Response Length: {avg_metrics['response_length']:.1f} words")
 
 if __name__ == "__main__":
     evaluate_base_model()

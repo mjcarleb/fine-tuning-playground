@@ -28,6 +28,7 @@ class LoraConfig:
     target_modules: List[str]
     bias: str
     task_type: str
+    base_model_name_or_path: str
 
 class LlamaTrainer:
     def __init__(self, config_path: str):
@@ -66,14 +67,15 @@ class LlamaTrainer:
             trust_remote_code=True
         )
         
-        # Configure LoRA with correct parameter name (alpha, not lora_alpha)
+        # Configure LoRA with base model name
         lora_config = LoraConfig(
             r=self.config['lora']['r'],
-            alpha=self.config['lora']['alpha'],  # Changed from lora_alpha to alpha
+            alpha=self.config['lora']['alpha'],
             dropout=self.config['lora']['dropout'],
             target_modules=self.config['lora']['target_modules'],
             bias=self.config['lora']['bias'],
-            task_type=self.config['lora']['task_type']
+            task_type=self.config['lora']['task_type'],
+            base_model_name_or_path=self.config['model']['name']
         )
         
         self.model = get_peft_model(self.model, lora_config)

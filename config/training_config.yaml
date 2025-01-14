@@ -12,11 +12,11 @@ lora:
   r: 8
   alpha: 32
   dropout: 0.1
-  target_modules: ["q_proj", "v_proj"]
+  target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
   bias: "none"
   task_type: "CAUSAL_LM"
 
 dataset:
-  name: "your_dataset_name"
+  name: "lamini/lamini_docs"
   train_split: "train"
   eval_split: "validation"  # optional 

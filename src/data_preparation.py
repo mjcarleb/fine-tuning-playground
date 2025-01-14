@@ -1,30 +1,31 @@
 from datasets import load_dataset
-from typing import Dict, List, Optional
+from typing import Dict
 import torch
 from transformers import AutoTokenizer
 
 def prepare_dataset(
-    config: Dict,
     tokenizer: AutoTokenizer,
-    max_length: int = 512
+    max_length: int = 512,
+    dataset_path: str = "lamini/lamini_docs"
 ) -> torch.utils.data.Dataset:
     """
-    Prepare dataset for training.
+    Prepare Lamini docs dataset for training.
     
     Args:
-        config: Configuration dictionary containing dataset details
         tokenizer: Tokenizer to use for encoding
         max_length: Maximum sequence length
+        dataset_path: Path to the Lamini dataset
     """
-    # Load dataset (this is a placeholder - adjust based on your data source)
-    dataset = load_dataset("your_dataset_name")
+    # Load Lamini dataset
+    dataset = load_dataset(dataset_path)
     
     def tokenize_function(examples):
-        """Tokenize examples with appropriate formatting."""
-        # Add your prompt template here
+        """Tokenize examples using Lamini's format."""
+        # We'll need to adjust this based on the actual structure of your dataset
+        # You might want to print examples.keys() to see available fields
         prompts = [
-            f"### Instruction: {instruction}\n\n### Response: {response}"
-            for instruction, response in zip(examples["instruction"], examples["response"])
+            f"{text}"  # Adjust this format based on the actual data structure
+            for text in examples["text"]  # Adjust field name based on actual dataset
         ]
         
         return tokenizer(

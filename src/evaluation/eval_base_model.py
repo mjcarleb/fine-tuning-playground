@@ -4,6 +4,7 @@ from datasets import load_dataset
 import time
 from rouge_score import rouge_scorer
 import numpy as np
+from data.data_preparation import prepare_dataset
 
 def load_model_and_tokenizer():
     model_name = "meta-llama/Llama-3.2-3B-Instruct"
@@ -64,8 +65,8 @@ def evaluate_base_model(num_samples=10):
     # Load model and tokenizer
     model, tokenizer = load_model_and_tokenizer()
     
-    # Load test questions
-    dataset = load_dataset("lamini/lamini_docs")
+    # Load test data only
+    dataset = prepare_dataset(tokenizer, split="test")
     
     # Get total dataset size
     total_samples = len(dataset["train"])

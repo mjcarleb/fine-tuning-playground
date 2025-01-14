@@ -3,21 +3,30 @@ from typing import Dict
 import torch
 from transformers import AutoTokenizer
 
-def prepare_dataset(
-    tokenizer: AutoTokenizer,
-    max_length: int = 256,
-    dataset_path: str = "lamini/lamini_docs"
-) -> torch.utils.data.Dataset:
+def prepare_dataset(tokenizer, split="train", test_size=0.2, seed=42):
     """
-    Prepare Lamini docs dataset for training.
+    Prepare dataset with proper train/test split
     
     Args:
-        tokenizer: Tokenizer to use for encoding
-        max_length: Maximum sequence length (default: 256)
-        dataset_path: Path to the Lamini dataset
+        tokenizer: The tokenizer to use
+        split: Either "train" or "test"
+        test_size: Fraction of data to use for testing
+        seed: Random seed for reproducibility
     """
-    # Load Lamini dataset
-    dataset = load_dataset(dataset_path)
+    # Load dataset
+    dataset = load_dataset("lamini/lamini_docs")
+    
+    # Split into train and test
+    splits = dataset["train"].train_test_split(
+        test_size=test_size, 
+        seed=seed
+    )
+    
+    # Select appropriate split
+    if split == "train":
+        data = splits["train"]
+    else:
+        data = splits["test"]
     
     def tokenize_function(examples):
         """Tokenize examples using Q&A format."""
@@ -42,10 +51,10 @@ def prepare_dataset(
         return tokenized
     
     # Tokenize dataset
-    tokenized_dataset = dataset.map(
+    tokenized_dataset = data.map(
         tokenize_function,
         batched=True,
-        remove_columns=dataset["train"].column_names
+        remove_columns=data.column_names
     )
     
-    return tokenized_dataset["train"] 
+    return tokenized_dataset 

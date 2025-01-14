@@ -8,8 +8,8 @@ def main():
     # Setup model and tokenizer
     trainer.setup_model()
     
-    # Load and prepare dataset using existing function
-    train_dataset = prepare_dataset(trainer.tokenizer)  # Pass tokenizer
+    # Load training data only
+    train_dataset = prepare_dataset(trainer.tokenizer, split="train")
     
     # Train the model
     trainer.train(train_dataset)

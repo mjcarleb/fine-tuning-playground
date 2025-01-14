@@ -4,4 +4,5 @@ peft>=0.7.0
 accelerate>=0.25.0
 bitsandbytes>=0.41.0
 PyYAML>=6.0
+rouge-score>=0.1.2
 wandb>=0.15.0  # for experiment tracking

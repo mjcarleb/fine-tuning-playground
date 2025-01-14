@@ -9,36 +9,37 @@ def load_model_and_tokenizer():
     model_name = "meta-llama/Llama-3.2-3B-Instruct"
     print(f"Loading model and tokenizer from {model_name}...")
     
-    # Check if MPS is available
-    device = torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
+    # Force CPU usage and enable memory optimizations
+    device = torch.device("cpu")
     print(f"Using device: {device}")
     
     tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer.pad_token = tokenizer.eos_token
+    
+    # Load model with CPU optimizations
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=torch.float16,  # Use half precision
-        device_map="mps" if torch.backends.mps.is_available() else "auto",
-        low_cpu_mem_usage=True,     # Reduce memory usage
-        offload_folder="offload"    # Offload to disk if needed
-    )
-    
-    # Enable memory efficient attention if available
-    if hasattr(model.config, "use_memory_efficient_attention"):
-        model.config.use_memory_efficient_attention = True
+        torch_dtype=torch.float32,  # Use float32 for CPU
+        device_map=None,  # Force CPU
+        low_cpu_mem_usage=True,
+        offload_folder="offload"
+    ).to(device)  # Ensure model is on CPU
     
     return model, tokenizer
 
-def generate_response(model, tokenizer, question, max_length=256):  # Reduced max length
+def generate_response(model, tokenizer, question, max_length=64):  # Further reduced max_length
     prompt = f"### Question: {question}\n\n### Answer:"
-    inputs = tokenizer(prompt, return_tensors="pt", padding=True, truncation=True)
+    inputs = tokenizer(
+        prompt, 
+        return_tensors="pt", 
+        padding=True, 
+        truncation=True,
+        max_length=max_length
+    ).to(model.device)  # Ensure inputs are on CPU
     
-    # Move inputs to the same device as model
-    inputs = {k: v.to(model.device) for k, v in inputs.items()}
-    
-    # Record generation time
     start_time = time.time()
     
-    with torch.inference_mode():  # More efficient than no_grad
+    with torch.inference_mode():
         outputs = model.generate(
             **inputs,
             max_length=max_length,
@@ -46,11 +47,11 @@ def generate_response(model, tokenizer, question, max_length=256):  # Reduced ma
             temperature=0.7,
             do_sample=True,
             pad_token_id=tokenizer.eos_token_id,
-            num_beams=1,           # Disable beam search for speed
-            early_stopping=True,   # Stop when EOS token is generated
-            top_k=50,             # Limit vocabulary choices
-            top_p=0.95,           # Nucleus sampling
-            repetition_penalty=1.2 # Reduce repetition
+            num_beams=1,  # Reduced beam search
+            early_stopping=True,
+            top_k=50,
+            top_p=0.95,
+            repetition_penalty=1.2
         )
     
     generation_time = time.time() - start_time
@@ -80,7 +81,7 @@ def calculate_metrics(response, ground_truth):
         'length_ratio': response_length / ground_truth_length if ground_truth_length > 0 else 0
     }
 
-def evaluate_base_model(num_samples=3):  # Reduced number of samples for testing
+def evaluate_base_model(num_samples=2):  # Reduced to 2 samples
     # Load model and tokenizer
     model, tokenizer = load_model_and_tokenizer()
     

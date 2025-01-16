@@ -6,10 +6,28 @@ from transformers import (
     AutoTokenizer,
     TrainingArguments,
     Trainer,
-    BitsAndBytesConfig
+    BitsAndBytesConfig,
+    TrainerCallback,
+    EarlyStoppingCallback
 )
 from peft import LoraConfig as PeftLoraConfig, get_peft_model
 import yaml
+
+class ProgressCallback(TrainerCallback):
+    def on_epoch_begin(self, args, state, control, **kwargs):
+        print(f"\nStarting epoch {state.epoch + 1}/{args.num_train_epochs}")
+    
+    def on_evaluate(self, args, state, control, metrics, **kwargs):
+        print(f"\nEvaluation at step {state.global_step}:")
+        train_loss = metrics.get('train_loss', 'N/A')
+        print(f"Training Loss: {train_loss if train_loss == 'N/A' else f'{train_loss:.4f}'}")
+        print(f"Eval Loss: {metrics.get('eval_loss', 'N/A'):.4f}")
+        learning_rate = metrics.get('learning_rate', 'N/A')
+        print(f"Learning Rate: {learning_rate if learning_rate == 'N/A' else f'{learning_rate:.6f}'}")
+
+    def on_log(self, args, state, control, logs, **kwargs):
+        if 'loss' in logs:
+            print(f"Step {state.global_step}: loss = {logs['loss']:.4f}")
 
 @dataclass
 class TrainingConfig:
@@ -105,17 +123,15 @@ class LlamaTrainer:
             num_train_epochs=int(self.config['training']['num_epochs']),
             weight_decay=0.01,
             logging_dir='./logs',
-            logging_steps=10,
+            logging_steps=5,
             evaluation_strategy="steps",
-            eval_steps=100,
+            eval_steps=50,
             save_strategy="steps",
             save_steps=100,
             save_total_limit=1,
             load_best_model_at_end=True,
             metric_for_best_model="eval_loss",
             greater_is_better=False,
-            early_stopping_patience=int(self.config['training'].get('early_stopping_patience', 3)),
-            early_stopping_threshold=float(self.config['training'].get('early_stopping_threshold', 0.001))
         )
 
         trainer = Trainer(
@@ -124,6 +140,13 @@ class LlamaTrainer:
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
             tokenizer=self.tokenizer,
+            callbacks=[
+                ProgressCallback(),
+                EarlyStoppingCallback(
+                    early_stopping_patience=int(self.config['training'].get('early_stopping_patience', 3)),
+                    early_stopping_threshold=float(self.config['training'].get('early_stopping_threshold', 0.001))
+                )
+            ]
         )
 
         trainer.train()

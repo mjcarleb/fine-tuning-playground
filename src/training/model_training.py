@@ -106,11 +106,16 @@ class LlamaTrainer:
             weight_decay=0.01,
             logging_dir='./logs',
             logging_steps=10,
-            evaluation_strategy="steps" if eval_dataset else "no",
+            evaluation_strategy="steps",
+            eval_steps=100,
             save_strategy="steps",
             save_steps=100,
-            save_total_limit=3,
-            load_best_model_at_end=True if eval_dataset else False,
+            save_total_limit=1,
+            load_best_model_at_end=True,
+            metric_for_best_model="eval_loss",
+            greater_is_better=False,
+            early_stopping_patience=int(self.config['training'].get('early_stopping_patience', 3)),
+            early_stopping_threshold=float(self.config['training'].get('early_stopping_threshold', 0.001))
         )
 
         trainer = Trainer(

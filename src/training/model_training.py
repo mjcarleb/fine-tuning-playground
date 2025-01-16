@@ -50,10 +50,11 @@ class LlamaTrainer:
         return config
 
     def setup_model(self):
+        print("Loading model configuration...")
         model_config = {}
         
-        # Configure quantization if enabled
         if self.config['model'].get('quantization', {}).get('enabled', False):
+            print("Setting up quantization...")
             bnb_config = BitsAndBytesConfig(
                 load_in_4bit=self.config['model']['quantization']['load_in_4bit'],
                 bnb_4bit_compute_dtype=getattr(torch, self.config['model']['quantization']['compute_dtype']),
@@ -62,15 +63,15 @@ class LlamaTrainer:
             )
             model_config['quantization_config'] = bnb_config
         
-        # Load model with proper device handling
+        print(f"Loading model: {self.config['model']['name']}...")
         self.model = AutoModelForCausalLM.from_pretrained(
             self.config['model']['name'],
-            device_map={"": "cpu"},
+            device_map="auto",
             trust_remote_code=True,
             **model_config
         ).train()
         
-        # Load and configure tokenizer
+        print("Loading tokenizer...")
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.config['model']['name'],
             trust_remote_code=True
@@ -81,7 +82,7 @@ class LlamaTrainer:
             self.tokenizer.pad_token = self.tokenizer.eos_token
             self.model.config.pad_token_id = self.tokenizer.eos_token_id
         
-        # Use PEFT's LoraConfig directly
+        print("Configuring LoRA...")
         lora_config = PeftLoraConfig(
             r=self.config['lora']['r'],
             lora_alpha=self.config['lora']['alpha'],
@@ -91,7 +92,9 @@ class LlamaTrainer:
             task_type=self.config['lora']['task_type']
         )
         
+        print("Applying LoRA to model...")
         self.model = get_peft_model(self.model, lora_config)
+        print("Model setup complete!")
                 
     def train(self, train_dataset, eval_dataset=None):
         training_args = TrainingArguments(

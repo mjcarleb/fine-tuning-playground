@@ -1,7 +1,7 @@
 model:
   name: "meta-llama/Llama-3.2-3B-Instruct"
   quantization:
-    enabled: false  # Set to true for AWS
+    enabled: true  # Set to true for AWS
     load_in_4bit: true
     compute_dtype: "float16"
     quant_type: "nf4"
@@ -9,8 +9,8 @@ model:
 
 training:
   learning_rate: 2e-4
-  batch_size: 1
-  num_epochs: 1
+  batch_size: 4
+  num_epochs: 4
   max_length: 256
   gradient_accumulation_steps: 4
   warmup_steps: 100

@@ -10,3 +10,4 @@ dill<0.3.9,>=0.3.0
 multiprocess<0.70.17
 fsspec<=2024.9.0,>=2023.1.0
 requests==2.32.3
+python-dotenv==1.0.1

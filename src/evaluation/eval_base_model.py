@@ -157,4 +157,4 @@ if __name__ == "__main__":
     
     # Evaluate fine-tuned model
     print("\n=== Evaluating Fine-tuned Model ===")
-    evaluate_model("fine_tuned_model_eval_loss_0.38830")
+    evaluate_model("/home/ec2-user/myRepos/fine-tuning-playground/fine_tuned_model_eval_loss_0.38830")

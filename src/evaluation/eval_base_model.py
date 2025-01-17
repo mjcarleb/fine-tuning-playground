@@ -1,3 +1,6 @@
+import sys
+sys.path.append("src")  # Add src directory to Python path
+
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 from datasets import load_dataset

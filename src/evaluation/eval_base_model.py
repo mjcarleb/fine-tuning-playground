@@ -73,19 +73,20 @@ def evaluate_model(model_path=None, num_samples=10):
     # Load model and tokenizer
     model, tokenizer = load_model_and_tokenizer(model_path)
     
-    # Load test data only
-    dataset = prepare_dataset(tokenizer, split="test")
+    # Load original dataset
+    dataset = load_dataset("lamini/lamini_docs")
+    splits = dataset["train"].train_test_split(test_size=0.2, seed=42)
+    test_data = splits["test"]
     
     model_name = model_path or "Base Model (Llama-3.2-3B)"
     print(f"\nEvaluating {model_name} on {num_samples} sample questions:")
     
     # Get total dataset size
-    total_samples = len(dataset)
+    total_samples = len(test_data)
     print(f"Total available samples: {total_samples}")
     
-    # Select samples with some spacing to get diverse examples
     indices = np.linspace(0, total_samples-1, num_samples, dtype=int)
-    test_samples = dataset.select(indices)
+    test_samples = test_data.select(indices)
     
     print("----------------------------------------")
     

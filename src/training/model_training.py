@@ -115,6 +115,17 @@ class LlamaTrainer:
         print("Model setup complete!")
                 
     def train(self, train_dataset, eval_dataset=None):
+        self.best_eval_loss = float('inf')
+        
+        class MetricCallback(TrainerCallback):
+            def __init__(self, trainer):
+                self.trainer = trainer
+            
+            def on_evaluate(self, args, state, control, metrics, **kwargs):
+                eval_loss = metrics.get('eval_loss', None)
+                if eval_loss is not None:
+                    self.trainer.best_eval_loss = min(self.trainer.best_eval_loss, eval_loss)
+
         training_args = TrainingArguments(
             output_dir="./results",
             learning_rate=float(self.config['training']['learning_rate']),
@@ -144,6 +155,7 @@ class LlamaTrainer:
             tokenizer=self.tokenizer,
             callbacks=[
                 ProgressCallback(),
+                MetricCallback(self),
                 EarlyStoppingCallback(
                     early_stopping_patience=int(self.config['training'].get('early_stopping_patience', 3)),
                     early_stopping_threshold=float(self.config['training'].get('early_stopping_threshold', 0.001))
@@ -152,7 +164,10 @@ class LlamaTrainer:
         )
 
         trainer.train()
+        print(f"\nBest eval_loss achieved: {self.best_eval_loss:.4f}")
         
     def save_model(self, output_dir: str):
+        output_dir = f"{output_dir}_eval_loss_{self.best_eval_loss:.4f}"
         self.model.save_pretrained(output_dir)
         self.tokenizer.save_pretrained(output_dir)
+        print(f"Model saved to: {output_dir}")

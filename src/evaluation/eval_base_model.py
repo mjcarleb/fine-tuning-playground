@@ -6,8 +6,8 @@ from rouge_score import rouge_scorer
 import numpy as np
 from data.data_preparation import prepare_dataset
 
-def load_model_and_tokenizer():
-    model_name = "meta-llama/Llama-3.2-3B-Instruct"
+def load_model_and_tokenizer(model_path=None):
+    model_name = model_path or "meta-llama/Llama-3.2-3B-Instruct"
     print(f"Loading model and tokenizer from {model_name}...")
     
     tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -61,12 +61,15 @@ def calculate_metrics(response, ground_truth):
         'length_ratio': response_length / ground_truth_length if ground_truth_length > 0 else 0
     }
 
-def evaluate_base_model(num_samples=10):
+def evaluate_model(model_path=None, num_samples=10):
     # Load model and tokenizer
-    model, tokenizer = load_model_and_tokenizer()
+    model, tokenizer = load_model_and_tokenizer(model_path)
     
     # Load test data only
     dataset = prepare_dataset(tokenizer, split="test")
+    
+    model_name = model_path or "Base Model (Llama-3.2-3B)"
+    print(f"\nEvaluating {model_name} on {num_samples} sample questions:")
     
     # Get total dataset size
     total_samples = len(dataset["train"])
@@ -76,7 +79,6 @@ def evaluate_base_model(num_samples=10):
     indices = np.linspace(0, total_samples-1, num_samples, dtype=int)
     test_samples = dataset["train"].select(indices)
     
-    print(f"\nEvaluating base model on {num_samples} sample questions:")
     print("----------------------------------------")
     
     # Initialize metrics storage
@@ -139,4 +141,10 @@ def evaluate_base_model(num_samples=10):
         print(f"Average Length Ratio: {metrics_summary['length_ratio']['mean']:.2f} (±{metrics_summary['length_ratio']['std']:.2f})")
 
 if __name__ == "__main__":
-    evaluate_base_model()
+    # Evaluate base model
+    print("\n=== Evaluating Base Model ===")
+    evaluate_model()
+    
+    # Evaluate fine-tuned model
+    print("\n=== Evaluating Fine-tuned Model ===")
+    evaluate_model("./fine_tuned_model_eval_loss_0.38830")

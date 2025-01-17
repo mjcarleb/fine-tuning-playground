@@ -10,21 +10,31 @@ import numpy as np
 from data.data_preparation import prepare_dataset
 
 def load_model_and_tokenizer(model_path=None):
-    model_name = model_path or "meta-llama/Llama-3.2-3B-Instruct"
-    print(f"Loading model and tokenizer from {model_name}...")
-    
-    tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=True if model_path else False)
+    if model_path:
+        # Load local fine-tuned model
+        print(f"Loading local model from {model_path}...")
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path,
+            torch_dtype=torch.float16,
+            device_map="auto"
+        )
+        tokenizer = AutoTokenizer.from_pretrained(model_path)
+    else:
+        # Load base model from HuggingFace hub
+        model_name = "meta-llama/Llama-3.2-3B-Instruct"
+        print(f"Loading model from HuggingFace hub: {model_name}...")
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            torch_dtype=torch.float16,
+            device_map="auto"
+        )
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+
     # Set padding token if not set
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
         tokenizer.pad_token_id = tokenizer.eos_token_id
     
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        local_files_only=True if model_path else False,
-        torch_dtype=torch.float16,
-        device_map="auto"
-    )
     return model, tokenizer
 
 def generate_response(model, tokenizer, question, max_length=512):

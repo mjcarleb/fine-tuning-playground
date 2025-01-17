@@ -80,12 +80,12 @@ def evaluate_model(model_path=None, num_samples=10):
     print(f"\nEvaluating {model_name} on {num_samples} sample questions:")
     
     # Get total dataset size
-    total_samples = len(dataset["train"])
+    total_samples = len(dataset)
     print(f"Total available samples: {total_samples}")
     
     # Select samples with some spacing to get diverse examples
     indices = np.linspace(0, total_samples-1, num_samples, dtype=int)
-    test_samples = dataset["train"].select(indices)
+    test_samples = dataset.select(indices)
     
     print("----------------------------------------")
     

@@ -163,8 +163,8 @@ class LlamaTrainer:
                 ProgressCallback(),
                 MetricCallback(self),
                 BestEvalEarlyStoppingCallback(
-                    early_stopping_patience=int(self.config['training'].get('early_stopping_patience', 3)),
-                    early_stopping_threshold=float(self.config['training'].get('early_stopping_threshold', 0.001))
+                    patience=int(self.config['training'].get('early_stopping_patience', 3)),
+                    threshold=float(self.config['training'].get('early_stopping_threshold', 0.001))
                 )
             ]
         )

@@ -120,11 +120,16 @@ class LlamaTrainer:
         class MetricCallback(TrainerCallback):
             def __init__(self, trainer):
                 self.trainer = trainer
+                self.prev_eval_loss = None
             
             def on_evaluate(self, args, state, control, metrics, **kwargs):
                 eval_loss = metrics.get('eval_loss', None)
                 if eval_loss is not None:
                     self.trainer.best_eval_loss = min(self.trainer.best_eval_loss, eval_loss)
+                    if self.prev_eval_loss is not None:
+                        improvement = (self.prev_eval_loss - eval_loss) / self.prev_eval_loss * 100
+                        print(f"\nImprovement over previous: {improvement:.3f}%")
+                    self.prev_eval_loss = eval_loss
 
         training_args = TrainingArguments(
             output_dir="./results",

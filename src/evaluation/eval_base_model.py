@@ -17,15 +17,17 @@ def load_model_and_tokenizer(model_path=None):
         base_model = AutoModelForCausalLM.from_pretrained(
             "meta-llama/Llama-3.2-3B-Instruct",
             torch_dtype=torch.float16,
-            device_map="auto"
+            device_map="auto",
+            trust_remote_code=True
         )
         # Then load and apply LoRA adapters
         from peft import PeftModel
         model = PeftModel.from_pretrained(
-            base_model,
+            base_model, 
             model_path,
-            tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-3B-Instruct")
+            trust_remote_code=True
         )
+        tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-3B-Instruct")
     else:
         # Load base model from HuggingFace hub
         model_name = "meta-llama/Llama-3.2-3B-Instruct"
@@ -166,12 +168,31 @@ def evaluate_model(model_path=None, num_samples=10):
         print(f"Average Response Length: {metrics_summary['response_length']['mean']:.1f} (±{metrics_summary['response_length']['std']:.1f}) words")
         print(f"Average Ground Truth Length: {metrics_summary['ground_truth_length']['mean']:.1f} (±{metrics_summary['ground_truth_length']['std']:.1f}) words")
         print(f"Average Length Ratio: {metrics_summary['length_ratio']['mean']:.2f} (±{metrics_summary['length_ratio']['std']:.2f})")
+        
+        return metrics_summary
 
 if __name__ == "__main__":
+    # Dictionary to store metrics for comparison
+    results = {}
+    
     # Evaluate base model
     print("\n=== Evaluating Base Model ===")
-    evaluate_model()
+    base_model = evaluate_model(num_samples=10)
+    results['base'] = base_model
     
     # Evaluate fine-tuned model
     print("\n=== Evaluating Fine-tuned Model ===")
-    evaluate_model("/home/ec2-user/myRepos/fine-tuning-playground/fine_tuned_model_eval_loss_0.38830")
+    fine_tuned = evaluate_model("./fine_tuned_model_eval_loss_0.3830", num_samples=10)
+    results['fine_tuned'] = fine_tuned
+    
+    # Print comparison
+    print("\n=== Model Comparison ===")
+    print("----------------------------------------")
+    print(f"Metric                  Base Model          Fine-tuned Model    Improvement")
+    print("----------------------------------------")
+    metrics = ['rouge1_f1', 'rouge2_f1', 'rougeL_f1', 'length_ratio']
+    for metric in metrics:
+        base_val = results['base'][metric]['mean']
+        ft_val = results['fine_tuned'][metric]['mean']
+        improvement = ((ft_val - base_val) / base_val) * 100
+        print(f"{metric:20s} {base_val:.3f} (±{results['base'][metric]['std']:.3f})  {ft_val:.3f} (±{results['fine_tuned'][metric]['std']:.3f})  {improvement:+.1f}%")

@@ -13,7 +13,7 @@ def load_model_and_tokenizer(model_path=None):
     model_name = model_path or "meta-llama/Llama-3.2-3B-Instruct"
     print(f"Loading model and tokenizer from {model_name}...")
     
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=True if model_path else False)
     # Set padding token if not set
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -21,6 +21,7 @@ def load_model_and_tokenizer(model_path=None):
     
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
+        local_files_only=True if model_path else False,
         torch_dtype=torch.float16,
         device_map="auto"
     )

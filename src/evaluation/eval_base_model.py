@@ -13,12 +13,19 @@ def load_model_and_tokenizer(model_path=None):
     if model_path:
         # Load local fine-tuned model
         print(f"Loading local model from {model_path}...")
-        model = AutoModelForCausalLM.from_pretrained(
-            model_path,
+        # First load base model
+        base_model = AutoModelForCausalLM.from_pretrained(
+            "meta-llama/Llama-3.2-3B-Instruct",
             torch_dtype=torch.float16,
             device_map="auto"
         )
-        tokenizer = AutoTokenizer.from_pretrained(model_path)
+        # Then load and apply LoRA adapters
+        from peft import PeftModel
+        model = PeftModel.from_pretrained(
+            base_model,
+            model_path,
+            tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-3B-Instruct")
+        )
     else:
         # Load base model from HuggingFace hub
         model_name = "meta-llama/Llama-3.2-3B-Instruct"

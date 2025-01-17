@@ -120,16 +120,17 @@ class LlamaTrainer:
         class MetricCallback(TrainerCallback):
             def __init__(self, trainer):
                 self.trainer = trainer
-                self.prev_eval_loss = None
+                self.best_eval_loss = float('inf')
             
             def on_evaluate(self, args, state, control, metrics, **kwargs):
                 eval_loss = metrics.get('eval_loss', None)
                 if eval_loss is not None:
                     self.trainer.best_eval_loss = min(self.trainer.best_eval_loss, eval_loss)
-                    if self.prev_eval_loss is not None:
-                        improvement = (self.prev_eval_loss - eval_loss) / self.prev_eval_loss * 100
-                        print(f"\nImprovement over previous: {improvement:.3f}%")
-                    self.prev_eval_loss = eval_loss
+                    improvement = (self.best_eval_loss - eval_loss) / self.best_eval_loss * 100
+                    print(f"\nImprovement vs best: {improvement:.3f}%")
+                    if eval_loss < self.best_eval_loss:
+                        self.best_eval_loss = eval_loss
+                        print(f"New best eval_loss: {eval_loss:.4f}")
 
         training_args = TrainingArguments(
             output_dir="./results",
@@ -161,7 +162,7 @@ class LlamaTrainer:
             callbacks=[
                 ProgressCallback(),
                 MetricCallback(self),
-                EarlyStoppingCallback(
+                BestEvalEarlyStoppingCallback(
                     early_stopping_patience=int(self.config['training'].get('early_stopping_patience', 3)),
                     early_stopping_threshold=float(self.config['training'].get('early_stopping_threshold', 0.001))
                 )
@@ -176,3 +177,24 @@ class LlamaTrainer:
         self.model.save_pretrained(output_dir)
         self.tokenizer.save_pretrained(output_dir)
         print(f"Model saved to: {output_dir}")
+
+class BestEvalEarlyStoppingCallback(TrainerCallback):
+    def __init__(self, patience=3, threshold=0.001):
+        self.patience = patience
+        self.threshold = threshold
+        self.best_eval_loss = float('inf')
+        self.no_improvement_count = 0
+    
+    def on_evaluate(self, args, state, control, metrics, **kwargs):
+        eval_loss = metrics.get('eval_loss', None)
+        if eval_loss is not None:
+            improvement = (self.best_eval_loss - eval_loss) / self.best_eval_loss
+            if eval_loss < self.best_eval_loss:
+                self.best_eval_loss = eval_loss
+                self.no_improvement_count = 0
+            elif improvement <= self.threshold:
+                self.no_improvement_count += 1
+                print(f"\nNo significant improvement vs best for {self.no_improvement_count} evaluations")
+                if self.no_improvement_count >= self.patience:
+                    print(f"\nStopping early: No improvement > {self.threshold*100:.3f}% vs best for {self.patience} evaluations")
+                    control.should_training_stop = True

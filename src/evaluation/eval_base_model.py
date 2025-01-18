@@ -8,6 +8,8 @@ import time
 from rouge_score import rouge_scorer
 import numpy as np
 from data.data_preparation import prepare_dataset
+import pandas as pd
+import os
 
 def load_model_and_tokenizer(model_path=None):
     if model_path:
@@ -92,6 +94,9 @@ def calculate_metrics(response, ground_truth):
     }
 
 def evaluate_model(model_path=None, num_samples=10):
+    # Create list to store results
+    results = []
+    
     # Load model and tokenizer
     model, tokenizer = load_model_and_tokenizer(model_path)
     
@@ -103,33 +108,25 @@ def evaluate_model(model_path=None, num_samples=10):
     model_name = model_path or "Base Model (Llama-3.2-3B)"
     print(f"\nEvaluating {model_name} on {num_samples} sample questions:")
     
-    # Get total dataset size
     total_samples = len(test_data)
-    print(f"Total available samples: {total_samples}")
-    
     indices = np.linspace(0, total_samples-1, num_samples, dtype=int)
     test_samples = test_data.select(indices)
-    
-    print("----------------------------------------")
-    
-    # Initialize metrics storage
-    all_metrics = []
-    total_generation_time = 0
     
     for idx, sample in enumerate(test_samples):
         question = sample["question"]
         ground_truth = sample["answer"]
         
-        print(f"\nQuestion {idx + 1}/{num_samples}: {question}")
-        
         try:
-            # Generate response with timeout
             response, generation_time = generate_response(model, tokenizer, question)
-            total_generation_time += generation_time
+            # Store results
+            results.append({
+                'question': question,
+                'ground_truth': ground_truth,
+                'response': response
+            })
             
             # Calculate metrics
             metrics = calculate_metrics(response, ground_truth)
-            all_metrics.append(metrics)
             
             print("\nModel Response:")
             print(response)
@@ -149,52 +146,27 @@ def evaluate_model(model_path=None, num_samples=10):
             print(f"Error processing question {idx + 1}: {str(e)}")
             continue
     
-    if all_metrics:
-        # Calculate and display average metrics with standard deviations
-        print("\nFinal Metrics Across All Samples:")
-        print("----------------------------------------")
-        metrics_summary = {}
-        
-        for key in all_metrics[0].keys():
-            values = [m[key] for m in all_metrics]
-            metrics_summary[key] = {
-                'mean': np.mean(values),
-                'std': np.std(values)
-            }
-        
-        print(f"Total Samples Processed: {len(all_metrics)}")
-        print(f"Average Generation Time: {total_generation_time/len(all_metrics):.2f} seconds")
-        print(f"ROUGE-1 F1: {metrics_summary['rouge1_f1']['mean']:.3f} (±{metrics_summary['rouge1_f1']['std']:.3f})")
-        print(f"ROUGE-2 F1: {metrics_summary['rouge2_f1']['mean']:.3f} (±{metrics_summary['rouge2_f1']['std']:.3f})")
-        print(f"ROUGE-L F1: {metrics_summary['rougeL_f1']['mean']:.3f} (±{metrics_summary['rougeL_f1']['std']:.3f})")
-        print(f"Average Response Length: {metrics_summary['response_length']['mean']:.1f} (±{metrics_summary['response_length']['std']:.1f}) words")
-        print(f"Average Ground Truth Length: {metrics_summary['ground_truth_length']['mean']:.1f} (±{metrics_summary['ground_truth_length']['std']:.1f}) words")
-        print(f"Average Length Ratio: {metrics_summary['length_ratio']['mean']:.2f} (±{metrics_summary['length_ratio']['std']:.2f})")
-        
-        return metrics_summary
+    return results
 
 if __name__ == "__main__":
-    # Dictionary to store metrics for comparison
-    results = {}
-    
-    # Evaluate base model
+    # Evaluate both models and store results
     print("\n=== Evaluating Base Model ===")
-    base_model = evaluate_model(num_samples=10)
-    results['base'] = base_model
+    base_results = evaluate_model(num_samples=10)
     
-    # Evaluate fine-tuned model
     print("\n=== Evaluating Fine-tuned Model ===")
-    fine_tuned = evaluate_model("./fine_tuned_model_eval_loss_0.3830", num_samples=10)
-    results['fine_tuned'] = fine_tuned
+    fine_tuned_results = evaluate_model("./fine_tuned_model_eval_loss_0.3830", num_samples=10)
     
-    # Print comparison
-    print("\n=== Model Comparison ===")
-    print("----------------------------------------")
-    print(f"Metric                  Base Model          Fine-tuned Model    Improvement")
-    print("----------------------------------------")
-    metrics = ['rouge1_f1', 'rouge2_f1', 'rougeL_f1', 'length_ratio']
-    for metric in metrics:
-        base_val = results['base'][metric]['mean']
-        ft_val = results['fine_tuned'][metric]['mean']
-        improvement = ((ft_val - base_val) / base_val) * 100
-        print(f"{metric:20s} {base_val:.3f} (±{results['base'][metric]['std']:.3f})  {ft_val:.3f} (±{results['fine_tuned'][metric]['std']:.3f})  {improvement:+.1f}%")
+    # Create DataFrame
+    df = pd.DataFrame({
+        'question': [r['question'] for r in base_results],
+        'ground_truth': [r['ground_truth'] for r in base_results],
+        'base_response': [r['response'] for r in base_results],
+        'fine_tuned_response': [r['response'] for r in fine_tuned_results]
+    })
+    
+    # Save to CSV
+    output_dir = "results"
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, 'model_comparison_results.csv')
+    df.to_csv(output_path, index=False)
+    print(f"\nResults saved to {output_path}")

@@ -1,6 +1,9 @@
 FROM ./llama.cpp/base_instruct.gguf
-TEMPLATE "{{ .Prompt }}"
-SYSTEM "You are a helpful AI assistant. Provide clear, factual responses based on your training."
+TEMPLATE """
+### Question: {{ .Prompt }}
+
+### Answer:"""
+SYSTEM "You are a direct and concise AI assistant. Provide clear, factual responses without additional sections or formatting. Focus on the main point first, then add brief supporting details if necessary."
 PARAMETER stop "<|end_of_turn|>"
 PARAMETER temperature 0.1
 PARAMETER top_p 0.1

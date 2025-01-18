@@ -1,5 +1,8 @@
 FROM ./llama.cpp/model.gguf
-TEMPLATE "{{ .Prompt }}"
+TEMPLATE """
+### Question: {{ .Prompt }}
+
+### Answer:"""
 SYSTEM "You are a precise documentation assistant. Always provide accurate, consistent responses. Stick strictly to known information and technical facts."
 PARAMETER stop "<|end_of_turn|>"
 PARAMETER temperature 0.1

@@ -35,6 +35,7 @@ tokenizer = AutoTokenizer.from_pretrained(
     "meta-llama/Llama-3.2-3B-Instruct",
     token=os.getenv('HF_TOKEN')
 )
+
 tokenizer.save_pretrained("merged_model")
 
 print("Merge complete! Model saved to: merged_model/")

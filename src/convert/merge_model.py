@@ -27,4 +27,14 @@ model = PeftModel.from_pretrained(
 merged_model = model.merge_and_unload()
 
 print("Saving merged model...")
-merged_model.save_pretrained("./merged_model")
+merged_model.save_pretrained("./merged_model", safe_serialization=True)
+
+# Save tokenizer files
+print("Copying tokenizer files...")
+tokenizer = AutoTokenizer.from_pretrained(
+    "meta-llama/Llama-3.2-3B-Instruct",
+    token=os.getenv('HF_TOKEN')
+)
+tokenizer.save_pretrained("merged_model")
+
+print("Merge complete! Model saved to: merged_model/")

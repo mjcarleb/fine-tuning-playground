@@ -192,12 +192,22 @@ if __name__ == "__main__":
     
     # Save metrics summary to markdown
     markdown_content = """# Model Comparison Metrics
+
+## Performance Analysis
+
+The following metrics compare the base Llama 3.2-3B-Instruct model with our fine-tuned version across key metrics:
+
+| Metric | Base Model | Fine-tuned Model | Improvement |
+|:-------|:----------:|:----------------:|:-----------:|
+"""
     
-    ## Average Metrics Across All Samples
-    
-    | Metric | Base Model | Fine-tuned Model | Improvement |
-    |--------|------------|------------------|-------------|
-    """
+    # Define friendly metric names
+    metric_names = {
+        'rouge1_f1': 'ROUGE-1 (F1)',
+        'rouge2_f1': 'ROUGE-2 (F1)',
+        'rougeL_f1': 'ROUGE-L (F1)',
+        'length_ratio': 'Length Ratio'
+    }
     
     metrics = ['rouge1_f1', 'rouge2_f1', 'rougeL_f1', 'length_ratio']
     for metric in metrics:
@@ -206,7 +216,17 @@ if __name__ == "__main__":
         ft_val = ft_metrics[metric]['mean']
         ft_std = ft_metrics[metric]['std']
         improvement = ((ft_val - base_val) / base_val) * 100
-        markdown_content += f"| {metric} | {base_val:.3f} (±{base_std:.3f}) | {ft_val:.3f} (±{ft_std:.3f}) | {improvement:+.1f}% |\n"
+        markdown_content += f"| {metric_names[metric]} | {base_val:.3f} ± {base_std:.3f} | {ft_val:.3f} ± {ft_std:.3f} | **{improvement:+.1f}%** |\n"
+    
+    markdown_content += """
+
+## Metric Descriptions
+
+- **ROUGE-1**: Word-level overlap between model output and ground truth
+- **ROUGE-2**: Bigram overlap between model output and ground truth
+- **ROUGE-L**: Longest common subsequence between model output and ground truth
+- **Length Ratio**: Ratio of model response length to ground truth length
+"""
     
     markdown_path = os.path.join(output_dir, 'metrics_summary.md')
     with open(markdown_path, 'w') as f:

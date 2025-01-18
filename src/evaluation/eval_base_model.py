@@ -57,8 +57,10 @@ def generate_response(model, tokenizer, question, max_length=512):
         **inputs,
         max_length=max_length,
         num_return_sequences=1,
-        temperature=0.7,
-        do_sample=True,
+        temperature=0.1,
+        top_p=0.1,
+        top_k=10,
+        do_sample=False,
         pad_token_id=tokenizer.eos_token_id
     )
     

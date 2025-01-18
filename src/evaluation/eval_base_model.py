@@ -226,21 +226,7 @@ The following metrics compare the base Llama 3.2-3B-Instruct model with our fine
 - **ROUGE-2**: Bigram overlap between model output and ground truth
 - **ROUGE-L**: Longest common subsequence between model output and ground truth
 - **Length Ratio**: Ratio of model response length to ground truth length
-
-+ ## Detailed Response Comparison
-+ 
-+ | Question | Ground Truth | Base Model Response | Fine-tuned Response |
-+ |:---------|:-------------|:-------------------|:-------------------|
 """
-     
-    # Add each QA pair to the table
-    for i in range(len(df)):
-        q = df['question'].iloc[i].replace('\n', ' ')
-        gt = df['ground_truth'].iloc[i].replace('\n', ' ')
-        base = df['base_response'].iloc[i].replace('\n', ' ')
-        ft = df['fine_tuned_response'].iloc[i].replace('\n', ' ')
-        
-        markdown_content += f"| {q} | {gt} | {base} | {ft} |\n"
       
     markdown_path = os.path.join(output_dir, 'metrics_summary.md')
     with open(markdown_path, 'w') as f:

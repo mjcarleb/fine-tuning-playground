@@ -96,6 +96,13 @@ def calculate_metrics(response, ground_truth):
 def evaluate_model(model_path=None, num_samples=10):
     # Create list to store results
     results = []
+    # Create dict to store metrics
+    metrics_summary = {
+        'rouge1_f1': [],
+        'rouge2_f1': [],
+        'rougeL_f1': [],
+        'length_ratio': []
+    }
     
     # Load model and tokenizer
     model, tokenizer = load_model_and_tokenizer(model_path)
@@ -127,6 +134,9 @@ def evaluate_model(model_path=None, num_samples=10):
             
             # Calculate metrics
             metrics = calculate_metrics(response, ground_truth)
+            # Store metrics
+            for key in metrics_summary.keys():
+                metrics_summary[key].append(metrics[key])
             
             print("\nModel Response:")
             print(response)
@@ -146,15 +156,24 @@ def evaluate_model(model_path=None, num_samples=10):
             print(f"Error processing question {idx + 1}: {str(e)}")
             continue
     
-    return results
+    # Calculate means and stds
+    metrics_stats = {}
+    for key in metrics_summary:
+        values = np.array(metrics_summary[key])
+        metrics_stats[key] = {
+            'mean': np.mean(values),
+            'std': np.std(values)
+        }
+    
+    return results, metrics_stats
 
 if __name__ == "__main__":
     # Evaluate both models and store results
     print("\n=== Evaluating Base Model ===")
-    base_results = evaluate_model(num_samples=10)
+    base_results, base_metrics = evaluate_model(num_samples=1)
     
     print("\n=== Evaluating Fine-tuned Model ===")
-    fine_tuned_results = evaluate_model("./fine_tuned_model_eval_loss_0.3830", num_samples=10)
+    fine_tuned_results, ft_metrics = evaluate_model("./fine_tuned_model_eval_loss_0.3830", num_samples=1)
     
     # Create DataFrame
     df = pd.DataFrame({
@@ -170,3 +189,26 @@ if __name__ == "__main__":
     output_path = os.path.join(output_dir, 'model_comparison_results.csv')
     df.to_csv(output_path, index=False)
     print(f"\nResults saved to {output_path}")
+    
+    # Save metrics summary to markdown
+    markdown_content = """# Model Comparison Metrics
+    
+    ## Average Metrics Across All Samples
+    
+    | Metric | Base Model | Fine-tuned Model | Improvement |
+    |--------|------------|------------------|-------------|
+    """
+    
+    metrics = ['rouge1_f1', 'rouge2_f1', 'rougeL_f1', 'length_ratio']
+    for metric in metrics:
+        base_val = base_metrics[metric]['mean']
+        base_std = base_metrics[metric]['std']
+        ft_val = ft_metrics[metric]['mean']
+        ft_std = ft_metrics[metric]['std']
+        improvement = ((ft_val - base_val) / base_val) * 100
+        markdown_content += f"| {metric} | {base_val:.3f} (±{base_std:.3f}) | {ft_val:.3f} (±{ft_std:.3f}) | {improvement:+.1f}% |\n"
+    
+    markdown_path = os.path.join(output_dir, 'metrics_summary.md')
+    with open(markdown_path, 'w') as f:
+        f.write(markdown_content)
+    print(f"Metrics summary saved to {markdown_path}")

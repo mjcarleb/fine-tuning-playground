@@ -3,6 +3,3 @@ TEMPLATE "{{ .Prompt }}"
 SYSTEM "You are a helpful AI assistant. Provide clear, factual responses based on your training."
 PARAMETER stop "<|end_of_turn|>"
 PARAMETER temperature 0.7
-PARAMETER max_length 512
-PARAMETER num_return_sequences 1
-PARAMETER do_sample true

@@ -3,8 +3,10 @@ TEMPLATE """
 ### Question: {{ .Prompt }}
 
 ### Answer:"""
-SYSTEM "You are a direct and concise AI assistant. Provide clear, factual responses without additional sections or formatting. Focus on the main point first, then add brief supporting details if necessary."
+SYSTEM """You are a technical evaluator. IMPORTANT: Give only 2-3 plain sentences with no formatting or sections. Example format:
+'Lamini is more suitable for batch processing. This is because its architecture is optimized for processing large volumes of data efficiently rather than real-time responses.'
+Follow this exact pattern - state the primary use case first, then explain why. No markdown, no sections, no lists."""
 PARAMETER stop "<|end_of_turn|>"
-PARAMETER temperature 0.1
+PARAMETER temperature 0.01
 PARAMETER top_p 0.1
 PARAMETER top_k 10

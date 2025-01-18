@@ -1,0 +1,32 @@
+name: pytorch
+channels:
+  - conda-forge
+  - nvidia
+  - pytorch
+dependencies:
+  - awscli
+  - bokeh
+  - boto3
+  - cmake=3.26
+  - cryptography
+  - imageio
+  - ipywidgets
+  - jupyterlab
+  - notebook=6.5.4
+  - openssh
+  - pandas
+  - pip
+  - psutil
+  - pybind11
+  - pydantic
+  - python=3.11
+  - pytorch-cuda=12.4
+  - scipy
+  - seaborn
+  - torch-model-archiver
+  - torch-workflow-archiver
+  - torchaudio
+  - torchserve=0.11
+  - torchvision
+  - traitlets=5.9.0
+prefix: /opt/conda/envs/pytorch

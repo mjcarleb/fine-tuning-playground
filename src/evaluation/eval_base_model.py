@@ -170,10 +170,10 @@ def evaluate_model(model_path=None, num_samples=10):
 if __name__ == "__main__":
     # Evaluate both models and store results
     print("\n=== Evaluating Base Model ===")
-    base_results, base_metrics = evaluate_model(num_samples=1)
+    base_results, base_metrics = evaluate_model(num_samples=10)
     
     print("\n=== Evaluating Fine-tuned Model ===")
-    fine_tuned_results, ft_metrics = evaluate_model("./fine_tuned_model_eval_loss_0.3830", num_samples=1)
+    fine_tuned_results, ft_metrics = evaluate_model("./fine_tuned_model_eval_loss_0.3830", num_samples=10)
     
     # Create DataFrame
     df = pd.DataFrame({

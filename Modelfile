@@ -1,0 +1,6 @@
+FROM llama2-3b
+PARAMETER temperature 0.7
+PARAMETER stop "### Question:"
+PARAMETER stop "### Answer:"
+
+ADAPTER ./fine_tuned_model_eval_loss_0.3830

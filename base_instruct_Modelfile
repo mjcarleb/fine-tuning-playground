@@ -2,10 +2,12 @@ FROM ./llama.cpp/base_instruct.gguf
 TEMPLATE """
 ### Question: {{ .Prompt }}
 
-### Answer:"""
-SYSTEM """You are a technical evaluator. IMPORTANT: Give only 2-3 plain sentences with no formatting or sections. Example format:
-'Lamini is more suitable for batch processing. This is because its architecture is optimized for processing large volumes of data efficiently rather than real-time responses.'
-Follow this exact pattern - state the primary use case first, then explain why. No markdown, no sections, no lists."""
+### Answer: [Give exactly two sentences. No sections or formatting.]"""
+SYSTEM """CRITICAL INSTRUCTION: You must respond with exactly two plain sentences.
+First sentence must state if Lamini is better for batch or real-time.
+Second sentence must explain why.
+NO sections, NO formatting, NO lists, NO markdown.
+Example response: 'Lamini is more suitable for batch processing. Its architecture is optimized for processing large volumes of data efficiently.'"""
 PARAMETER stop "<|end_of_turn|>"
 PARAMETER temperature 0.01
 PARAMETER top_p 0.1

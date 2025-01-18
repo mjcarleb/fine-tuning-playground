@@ -17,6 +17,8 @@ def convert_model():
     print("Loading merged model...")
     # Check if CUDA is available
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if not torch.cuda.is_available():
+        raise RuntimeError("CUDA is required for this conversion")
     print(f"Using device: {device}")
 
     # Create quantization config
@@ -43,9 +45,16 @@ def convert_model():
         'merged_model',
         quantize_config=quantize_config,
         trust_remote_code=True,
-        device_map={"": device},  # Explicitly set device
+        device_map=None,  # Don't use device mapping
         torch_dtype=torch.float16
     )
+    # Move entire model to CUDA at once
+    model = model.cuda()
+    
+    # Force model's rotary embeddings to CUDA
+    if hasattr(model.model, 'rotary_emb'):
+        model.model.rotary_emb = model.model.rotary_emb.cuda()
+        print("Moved rotary embeddings to:", model.model.rotary_emb.device)
     
     # Prepare example data
     print("Preparing example data...")
@@ -58,10 +67,16 @@ def convert_model():
     # Format examples and ensure they're on the same device as model
     examples = [
         {
-            'input_ids': torch.tensor(dataset[0]['input_ids'], device=device),
-            'attention_mask': torch.tensor(dataset[0]['attention_mask'], device=device)
+            'input_ids': torch.tensor(dataset[0]['input_ids']).cuda(),
+            'attention_mask': torch.tensor(dataset[0]['attention_mask']).cuda(),
+            'position_ids': torch.arange(len(dataset[0]['input_ids'])).cuda()
         }
     ]
+
+    # Add debug print to check all tensor devices
+    print("\nTensor device check:")
+    for key, value in examples[0].items():
+        print(f"{key} device: {value.device}")
 
     # Add this after dataset loading to inspect the data
     print("\nDataset inspection:")
@@ -95,6 +110,11 @@ def convert_model():
     # Add debug print of quantize method signature
     print("\nQuantize method info:")
     print(f"Quantize method: {model.quantize.__doc__}")
+
+    # Verify model device
+    print("\nModel device check:")
+    print(f"Model device map: {model.hf_device_map}")
+    print(f"First parameter device: {next(model.parameters()).device}")
 
 if __name__ == "__main__":
     convert_model() 

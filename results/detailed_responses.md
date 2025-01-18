@@ -1,26 +1,7 @@
-# Model Comparison Metrics
+# Detailed Model Response Comparison
 
-## Performance Analysis
+This document compares responses from the base Llama 3.2-3B-Instruct model and our fine-tuned version across test questions.
 
-The following metrics compare the base Llama 3.2-3B-Instruct model with our fine-tuned version across key metrics:
-
-| Metric | Base Model | Fine-tuned Model | Improvement |
-|:-------|:----------:|:----------------:|:-----------:|
-| ROUGE-1 (F1) | 0.224 ± 0.000 | 0.520 ± 0.000 | **+132.3%** |
-| ROUGE-2 (F1) | 0.147 ± 0.000 | 0.204 ± 0.000 | **+39.1%** |
-| ROUGE-L (F1) | 0.190 ± 0.000 | 0.360 ± 0.000 | **+89.7%** |
-| Length Ratio | 5.705 ± 0.000 | 0.623 ± 0.000 | **-89.1%** |
-
-
-## Metric Descriptions
-
-- **ROUGE-1**: Word-level overlap between model output and ground truth
-- **ROUGE-2**: Bigram overlap between model output and ground truth
-- **ROUGE-L**: Longest common subsequence between model output and ground truth
-- **Length Ratio**: Ratio of model response length to ground truth length
-
-+ ## Detailed Response Comparison
-+ 
-+ | Question | Ground Truth | Base Model Response | Fine-tuned Response |
-+ |:---------|:-------------|:-------------------|:-------------------|
+| Question | Ground Truth | Base Model Response | Fine-tuned Response |
+|:---------|:-------------|:-------------------|:-------------------|
 | Is it possible to use Lamini for generating poetry or creative writing? | Yes, it is possible to use Lamini for generating poetry or creative writing. The LLM Engine can be trained on a dataset of poems or creative writing, and then used to generate new pieces based on that training. Additionally, the LLM Engine can be fine-tuned on a specific style or genre of poetry or creative writing to generate more targeted results. | Yes, it is possible to use Lamini for generating poetry or creative writing. Lamini is a tool that can be used to generate text, including poetry and creative writing. It uses a combination of natural language processing and machine learning algorithms to generate text based on a given prompt or input.  To use Lamini for generating poetry or creative writing, you can follow these steps:  1. Open the Lamini app or website and enter a prompt or topic for your poem or story. 2. Choose the type of text you want to generate, such as poetry or creative writing. 3. Select the style or genre of your poem or story, such as romantic or sci-fi. 4. Adjust the settings to control the tone, language, and complexity of your generated text. 5. Click the "Generate" button to produce your poem or story.  Lamini can generate a wide range of creative writing styles, from simple and straightforward to complex and nuanced. It can also be used to generate poetry, including sonnets, haikus, and free verse.  Some benefits of using Lamini for generating poetry or creative writing include:  * Convenience: Lamini can generate text quickly and easily, without requiring extensive writing experience or expertise. * Inspiration: Lamini can provide inspiration and ideas for your own writing, helping you to overcome writer's block or generate new ideas. * Experimentation: Lamini can be used to experiment with different styles, genres, and themes, helping you to discover new voices and perspectives.  However, it's worth noting that Lamini is not a replacement for human creativity and originality. While it can generate text, it may not always produce work that is entirely original or unique. Additionally, the quality of the generated text may vary depending on the input prompt and settings.  Overall, Lamini can be a useful tool for generating poetry or creative writing, especially for those who are looking for inspiration or want to experiment with different styles and genres. However, it's always a good idea to review and edit the generated text to ensure that it meets your standards and is free of errors. | Yes, Lamini can be used for generating poetry or creative writing. It is a powerful language model that can generate text based on input prompts and can be used for a wide range of applications, including creative writing. |
